@@ -41,7 +41,7 @@ db <- dplyr::src_sqlite("tickets.sqlite")
 
 if (!dplyr::db_has_table(db$con, "tickets_staging")) {
   stop("--- can't find staging table in the database")
-} else if (dplyr::db_insert_into(db$con, "tickets_staging", values = df))
+} else if (dplyr::db_insert_into(db$con, "tickets_staging", values = df)) {
   print(paste("--- entries from", args[1], "copied to database"))
 } else {
   stop("--- failed to write entries to database")
