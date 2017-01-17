@@ -3,29 +3,26 @@
 # This script unzips any downloaded files, converts them to UTF-8 if necessary,
 # and then imports those files into the staging table using an R script.
 
-# 2014 and 2015 use a different format, and must be handled separately.
+# Unzip files.
 
-unzip raw-data/parking_tickets_2014.zip -d raw-data/
-unzip raw-data/parking_tickets_2015.zip -d raw-data/
-rm raw-data/parking_tickets_2014.zip
-rm raw-data/parking_tickets_2015.zip
+# for file in raw-data/parking_tickets_*.zip; do
+#     echo "[`date`] Unzipping $file."
+#     unzip $file -d raw-data/
+# done;
 
-for file in raw-data/Parking_Tags_Data_*.csv; do
-    echo "`date`: reading $file into staging table"
-    Rscript copy-csv-to-db.R "$file"
-done;
+# 2010 and 2008 appear to be UTF-16LE encoded, so use iconv to rewrite them.
 
-# Handle the older files.
+# echo "[`date`] Converting some files to UTF-8."
 
-for file in raw-data/parking_tickets_*.zip; do
-    echo "`date`: unzipping $file"
-    unzip $file -d raw-data/
-done;
+# iconv -f UTF-16LE -t UTF-8 "raw-data/Parking_Tags_data_2008.csv" > "raw-data/Parking_Tags_data_2008.csv.utf8"
+# iconv -f UTF-16LE -t UTF-8 "raw-data/Parking_Tags_data_2010.csv" > "raw-data/Parking_Tags_data_2010.csv.utf8"
 
-for file in raw-data/parking_tickets_*.csv; do
-    echo "`date`: converting $file to UTF-8"
-    iconv -f UTF-16LE -t UTF-8 "$file" > "$file.utf8"
-    mv "$file.utf8" "$file"
-    echo "`date`: reading $file into staging table"
+# mv "raw-data/Parking_Tags_data_2008.csv.utf8" "raw-data/Parking_Tags_data_2008.csv"
+# mv "raw-data/Parking_Tags_data_2010.csv.utf8" "raw-data/Parking_Tags_data_2010.csv"
+
+# Read CSV files into the database.
+
+for file in raw-data/*.csv; do
+    echo "[`date`] Reading $file into staging table."
     Rscript copy-csv-to-db.R "$file"
 done;
