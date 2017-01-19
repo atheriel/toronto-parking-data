@@ -1,0 +1,90 @@
+---
+title: "Investigating the Province Column"
+author: "Aaron Jacobs"
+date: "January 18, 2017"
+output:
+  md_document:
+    variant: markdown_github
+    fig_width: 6
+    fig_height: 4
+---
+
+The original CSV files have a column named "province" which seemed contain a
+two-character code, perhaps for the province of the license plate the ticket is
+being issued for. We want to verify that this is the case.
+
+To do this, we load the SQLite table containing all of the raw, newly-imported
+data. This works seemlessly with the dplyr package.
+
+```{r province-column}
+library(dplyr, warn.conflicts = FALSE)
+
+db <- src_sqlite("../tickets.sqlite")
+tickets_staging <- tbl(db, "tickets_staging")
+
+select(tickets_staging, province)
+```
+
+The first ten rows contain a large number of "ON" entries, which is exactly what
+you'd expect in Toronto, Ontario. To get a more exact picture of these entries,
+we can count the number of occurences of each code (note that this query may
+take a little while).
+
+```{r province-summary, cache = TRUE}
+prov.counts <- tickets_staging %>%
+    group_by(province) %>%
+    summarise(count = n()) %>%
+    ungroup() %>%
+    arrange(desc(count)) %>%
+    collect()
+
+prov.counts
+```
+
+This gives us our first little surprise: from those two-letter codes, it looks
+like New York, Michigan, Florida, and Arizona plates make the top-ten most
+ticketed list -- and therefore this column must regularly contain plates from
+the United States.
+
+To formalize this observation, we want to check if all of the entries in the
+column map to province or state abbreviations. After some web surfing, it seems
+like Canadian [province](https://en.wikipedia.org/wiki/ISO_3166-2:CA)
+and [US state](https://en.wikipedia.org/wiki/ISO_3166-2:US) abbreviations are
+codified in the ISO 3166 standard. I've put together a simple CSV file collating
+province and state abbreviations together, which we can load into R and combine
+with the summary above.
+
+```{r iso-3166-join}
+iso3166 <- readr::read_csv("../data/iso-3166-2.csv")
+
+semi_join(prov.counts, iso3166, by = c("province" = "abbr")) %>%
+    arrange(desc(count))
+```
+
+It looks like this catches most of the entires. What doesn't get matched?
+
+```{r iso-3166-anti-join}
+anti_join(prov.counts, iso3166, by = c("province" = "abbr"))
+```
+
+There are several interesting things here. First of all, there are a large
+number of entries labelled `PQ` and `NF`. If I had to hazzard a guess, I'd say
+that these are likely erroneous entries for Quebec (otherwise abbreviated `QC`)
+and Newfoundland and Labrador (otherwise abbreviated `NL`). "PQ" (for "province
+de Quebec") is a widely-used abbreviation for that province, and `NF` would be a
+pretty understandable error as well.
+
+Secondly, there are the one-off (or two-off) entries `PW`, `MH`, and `GO`. I
+suspect that these are literal "fat-fingered" data entry mistakes, since W is
+next to Q on a keyboard (making `PW` plausibly `PQ`) and H is next to N (making
+`MH` plausibly `MN`, for Manitoba). I'm less confident about `GO` along these
+lines, though.
+
+Last, there are missing values `<NA>` and the mysterious `XX`. I strongly
+suspect that `XX` was used during data entry for placeholder/don't know/can't
+remember.
+
+So what is the strategy for dealing with these errors? For `PQ` and `NF`, the
+correct approach would seem to be re-encoding entries. The remaining missing or
+erroneous data can likely be converted to missing values without degrading the
+quality of the overall data.
