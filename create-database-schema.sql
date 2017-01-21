@@ -34,3 +34,11 @@ CREATE TABLE infraction_codes (
   desc varchar,
   fine integer
 );
+
+-- This table holds the ISO 3166-2 codes for Canadian provinces and US states.
+
+CREATE TABLE iso3166 (
+  code varchar primary key,
+  place varchar,
+  country varchar
+);
