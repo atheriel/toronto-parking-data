@@ -29,8 +29,8 @@ CREATE TABLE tickets (
 
 -- This table holds infraction codes and the fines associated with them.
 
-CREATE TABLE infraction_codes (
-  code integer,
+CREATE TABLE infractions (
+  code integer primary key,
   desc varchar,
   fine integer
 );
