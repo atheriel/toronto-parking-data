@@ -20,10 +20,10 @@ CREATE TABLE tickets_staging (
 -- This is the "clean" table.
 
 CREATE TABLE tickets (
-  tag varchar,
   date datetime,
-  code integer,
-  location varchar,
+  infraction integer,
+  location1 varchar,
+  location2 varchar,
   province varchar
 );
 
