@@ -1,0 +1,79 @@
+---
+title: "Investigating the Infraction Columns"
+author: "Aaron Jacobs"
+date: "January 22, 2017"
+output:
+  md_document:
+    variant: markdown_github
+    fig_width: 6
+    fig_height: 4
+---
+
+The [data dictionary](http://opendata.toronto.ca/revenue/parking/ticket/parking_tickets_readme.xls)
+for the raw parking tickets data sets seems to indicate that there are three
+columns containing the definition of the particular infraction:
+`infraction_code`, `infraction_description`, and `set_fine_amount`. It sounds
+like all three of these columns should be consistent across all tickets, so we
+can significantly reduce the size of the data by moving the unique infraction
+entries to their own table, and keeping only a reference to the infraction code
+for each ticket entry.
+
+However, we need to check that these columns really are that simple before
+proceeding, so we load the data in the staging table.
+
+```{r load-db}
+library(dplyr, warn.conflicts = FALSE)
+
+db <- src_sqlite("../tickets.sqlite")
+tickets_staging <- tbl(db, "tickets_staging")
+```
+
+Now we can compute the frequency of all of unique combinations of these columns
+in the raw data:
+
+```{r infractions, cache = TRUE}
+infractions <- tickets_staging %>%
+    select(code = infraction_code, desc = infraction_description,
+           fine = set_fine_amount) %>%
+    group_by(code, desc, fine) %>%
+    summarise(freq = n()) %>%
+    ungroup() %>%
+    collect()
+
+infractions
+```
+
+OK, so there are two obvious problems with this from the outset. The first is
+that it looks like at least some of the codes have multiple descriptions. The
+second is that some of the codes seem to have different fines for different
+entries. I'll return to this second problem below, but for now let's focus on
+the first one.
+
+The first thing to do is check how big a problem this is. What is the set of
+codes that are "well-defined", in the sense that they have only one definition
+in the dataset?
+
+```{r well-defined}
+well.defined <- infractions %>%
+    # Pull out all of the codes that only have one "definition".
+    group_by(code) %>%
+    summarise(freq = n()) %>%
+    ungroup() %>%
+    filter(freq == 1) %>%
+    select(code) %>%
+    # Semi join on these well-defined infractions.
+    semi_join(infractions, ., by = "code")
+
+well.defined
+```
+
+Compare the number of rows in the well-defined group against the total number of
+codes we've got:
+
+```{r total-code-count}
+infractions %>%
+    summarise(total.codes = n_distinct(code))
+```
+
+So there are quite a few problematic definitions, although not too many to go
+over completely manually if necessary.
