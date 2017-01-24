@@ -55,14 +55,16 @@ OK, so there are two obvious problems with this from the outset. The first is th
 The first thing to do is check how big a problem this is. What is the set of codes that are "well-defined", in the sense that they have only one definition in the dataset?
 
 ``` r
-well.defined <- infractions %>%
+once.mentioned <- infractions %>%
     # Pull out all of the codes that only have one "definition".
     group_by(code) %>%
     summarise(freq = n()) %>%
     ungroup() %>%
     filter(freq == 1) %>%
-    select(code) %>%
-    # Semi join on these well-defined infractions.
+    select(code)
+
+well.defined <- once.mentioned %>%
+    # Semi join on these to get the "well-defined" infractions.
     semi_join(infractions, ., by = "code")
 
 well.defined
@@ -95,4 +97,63 @@ infractions %>%
     ##         <int>
     ## 1         246
 
-So there are quite a few problematic definitions, although not too many to go over completely manually if necessary.
+So there are quite a few problematic definitions, although not too many to go over completely manually if necessary. What are possible explanations for the large number of variants we observe?
+
+One possibility is that the descriptions and fines sometimes changed over time. After all, there eight years of data available. To test this, let's look at code `1`, which seems to indicate a failure to pay at a parking meter in a timely fashion. Do the descriptions and fines change over the years?
+
+``` r
+code.ones <- tickets_staging %>%
+    filter(infraction_code == 1) %>%
+    mutate(year = substr(date_of_infraction, 1, 4)) %>%
+    group_by(year, infraction_description, set_fine_amount) %>%
+    summarise(freq = n()) %>%
+    ungroup() %>%
+    collect()
+
+code.ones
+```
+
+    ## # A tibble: 33 × 4
+    ##     year         infraction_description set_fine_amount  freq
+    ##    <chr>                          <chr>           <int> <int>
+    ## 1   2008          PARK AT EXPIRED METER              30  3991
+    ## 2   2008  PARK FAIL TO DEP FEE IN METER              30  1207
+    ## 3   2008 PARK FAIL TO DEPOSIT FEE METER              30  5516
+    ## 4   2008 PARK-FAIL TO DEPOSIT FEE METER              30  1193
+    ## 5   2009          PARK AT EXPIRED METER              30  2923
+    ## 6   2009  PARK FAIL TO DEP FEE IN METER              30   286
+    ## 7   2009 PARK FAIL TO DEPOSIT FEE METER              30  4355
+    ## 8   2009 PARK-FAIL TO DEPOSIT FEE METER              30   750
+    ## 9   2010          PARK AT EXPIRED METER              30  3616
+    ## 10  2010  PARK FAIL TO DEP FEE IN METER              30   292
+    ## # ... with 23 more rows
+
+Well... it's not clear that this is the case. Perhaps there are more general patterns over time in the usage of these descriptions? If, say a new description was phased in over a number of years as individual machines were updated, we'd see the process of a takeover:
+
+``` r
+library(ggplot2)
+
+code.ones %>%
+    mutate(year = as.integer(year),
+           desc = forcats::fct_reorder(infraction_description,
+                                       freq, fun = sum)) %>%
+    ggplot() +
+    scale_fill_brewer(palette = "Spectral",
+                      guide = guide_legend(ncol = 2)) +
+    scale_y_continuous(labels = scales::percent) +
+    geom_col(aes(x = year, y = freq, fill = desc),
+             position = position_fill()) +
+    labs(fill = NULL, x = NULL, y = NULL,
+         title = "Descriptions for Tickets Marked Code 1, 2008-2015") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+```
+
+![](figures/infractions/more-code-one-1.png)
+
+And yet... that's not quite what we see, at least for code `1`. Sure there's a shift over time, but eight years to implement a new infraction description that is already the most common in 2008 seems implausible. It remains something of a mystery.
+
+Wait -- what about those $0 fines?
+----------------------------------
+
+TODO
