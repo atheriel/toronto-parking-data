@@ -1,3 +1,15 @@
+---
+title: "Investigating the Province Column"
+author: "Aaron Jacobs"
+date: "January 18, 2017"
+output:
+  md_document:
+    variant: markdown_github
+    fig_width: 6
+    fig_height: 4
+    preserve_yaml: true
+---
+
 The original CSV files have a column named "province" which seemed contain a two-character code, perhaps for the province of the license plate the ticket is being issued for. We want to verify that this is the case.
 
 To do this, we load the SQLite table containing all of the raw, newly-imported data. This works seemlessly with the dplyr package.

@@ -1,3 +1,15 @@
+---
+title: "Investigating the Infraction Columns"
+author: "Aaron Jacobs"
+date: "January 22, 2017"
+output:
+  md_document:
+    variant: markdown_github
+    fig_width: 6
+    fig_height: 4
+    preserve_yaml: true
+---
+
 The [data dictionary](http://opendata.toronto.ca/revenue/parking/ticket/parking_tickets_readme.xls) for the raw parking tickets data sets seems to indicate that there are three columns containing the definition of the particular infraction: `infraction_code`, `infraction_description`, and `set_fine_amount`. It sounds like all three of these columns should be consistent across all tickets, so we can significantly reduce the size of the data by moving the unique infraction entries to their own table, and keeping only a reference to the infraction code for each ticket entry.
 
 However, we need to check that these columns really are that simple before proceeding, so we load the data in the staging table.
