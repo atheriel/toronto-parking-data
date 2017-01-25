@@ -1,0 +1,58 @@
+---
+title: "Investigating the Location Columns"
+author: "Aaron Jacobs"
+date: "January 24, 2017"
+output:
+  md_document:
+    variant: markdown_github
+    fig_width: 6
+    fig_height: 4
+    preserve_yaml: true
+---
+
+The [data dictionary](http://opendata.toronto.ca/revenue/parking/ticket/parking_tickets_readme.xls)
+for the raw parking tickets data sets points to a complex encoding of the
+location the ticket was given at. It looks as though there can be two street
+addresses, along with a description of the "proximity" of each. What does this
+mean in practice? And is it possible to map this location encoding to, say,
+longitude and latitude?
+
+To get a sense of what is going on, we can load the data in the staging table
+
+```{r load-db}
+library(dplyr, warn.conflicts = FALSE)
+
+db <- src_sqlite("../tickets.sqlite")
+tickets_staging <- tbl(db, "tickets_staging")
+```
+
+And take a peek at the location rows:
+
+```{r raw-locations}
+tickets_staging %>%
+    select(location1:location4) %>%
+    print(n = 20)
+```
+
+From this particular sample, this data doesn't look so bad. The answer to why
+there are sometimes one and sometimes two street addresses seems to be that some
+entries point to an intersection.
+
+How complete is the location data? And how often is an intersection -- as
+opposed to a single address -- assigned to a ticket?
+
+```{r location-col-breakdown, cache = TRUE}
+location.counts <- tickets_staging %>%
+    summarise(total = n(),
+              one = sum(!is.na(location2)),
+              two = sum(!is.na(location4))) %>%
+    collect()
+
+location.counts %>%
+    mutate(one = one / total, two = two / total)
+```
+
+So these intersections are less common than one might have thought, looking at
+the sample above. The overwhelmingly more common case is that of a single
+address. It's also clear that the location data is pretty complete. More than 99
+percent of tickets have non-missing data.
