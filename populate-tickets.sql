@@ -1,6 +1,6 @@
 -- Populates the tickets table from the staging table.
 
-INSERT INTO tickets (date, infraction, location1, location2, province)
+INSERT INTO tickets (`date`, infraction, location1, location2, plate)
 SELECT
 -- Construct a datetime string from the two components.
   substr(`date`, 1, 4) || '-' || substr(`date`, 5, 2) || '-' ||

@@ -24,7 +24,7 @@ CREATE TABLE tickets (
   infraction integer,
   location1 varchar,
   location2 varchar,
-  province varchar
+  plate varchar
 );
 
 -- This table holds infraction codes and the fines associated with them.
