@@ -12,8 +12,8 @@ SELECT
   province
 FROM (
   SELECT
-    date_of_infraction AS date,
-    time_of_infraction AS time,
+    date_of_infraction AS `date`,
+    time_of_infraction AS `time`,
     infraction_code,
     location2,
     location4,
