@@ -5,7 +5,7 @@ of Toronto's parking tickets into a SQLite database. The approach is based on
 Todd Schneider's [nyc-taxi-data](https://github.com/toddwschneider/nyc-taxi-data)
 repository.
 
-There are 20,723,102 tickets in the database at the time of writing. The data
+There are 22,977,863 tickets in the database at the time of writing. The data
 contains the time and place each ticket was issued, the province or state of the
 license plate, as well as the infraction and the associated fine.
 
@@ -19,6 +19,7 @@ $ ./download-raw-data.sh
 $ ./create-database.sh
 $ ./import-raw-data.sh
 $ ./clean-entries.sh
+$ ./populate-infractions.sh
 $ ./populate-tickets.sh
 ```
 
