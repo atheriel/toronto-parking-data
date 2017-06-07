@@ -3,7 +3,7 @@
 -- Raw data is imported into the "staging" table, and then cleaned up before
 -- insertion into final table.
 
-CREATE TABLE tickets_staging (
+CREATE TABLE IF NOT EXISTS tickets_staging (
   tag_number_masked varchar,
   date_of_infraction varchar,
   infraction_code integer,
@@ -19,9 +19,10 @@ CREATE TABLE tickets_staging (
 
 -- This is the "clean" table.
 
-CREATE TABLE tickets (
+CREATE TABLE IF NOT EXISTS tickets (
   date datetime,
   infraction integer,
+  fine integer,
   location1 varchar,
   location2 varchar,
   plate varchar
@@ -29,15 +30,14 @@ CREATE TABLE tickets (
 
 -- This table holds infraction codes and the fines associated with them.
 
-CREATE TABLE infractions (
+CREATE TABLE IF NOT EXISTS infractions (
   code integer primary key,
-  desc varchar,
-  fine integer
+  desc varchar
 );
 
 -- This table holds the ISO 3166-2 codes for Canadian provinces and US states.
 
-CREATE TABLE iso3166 (
+CREATE TABLE IF NOT EXISTS iso3166 (
   code varchar primary key,
   place varchar,
   country varchar
